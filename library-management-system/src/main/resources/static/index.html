@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Library Management System</title>
+<style>
+:root{--bg:#f2f5f3;--ink:#14213d;--muted:#5a6677;--line:#d3dad6;--panel:#fff;--green:#2f6f5e;--red:#b3261e;--gold:#e0a526;--onGreen:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1620;--ink:#e8ecf1;--muted:#98a4b5;--line:#28333f;--panel:#17212c;--green:#5bb59d;--red:#ff8f85;--onGreen:#0f1620}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header,main{max-width:1100px;margin:auto;padding:0 20px}
+header{padding-top:26px}
+h1{font:700 2rem/1.2 Georgia,"Times New Roman",serif;margin:0 0 14px}
+.spines{display:flex;gap:3px;align-items:flex-end;height:38px;margin-bottom:10px}
+.spines i{width:13px;border-radius:2px 2px 0 0}
+nav{display:flex;gap:4px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+nav button{background:none;border:0;padding:10px 16px;font:inherit;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+nav button.on{color:var(--ink);font-weight:600;border-color:var(--gold)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+section{display:none;padding:22px 0 60px}section.on{display:block}
+h2{font:700 1.25rem Georgia,serif;margin:0 0 12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:22px}
+form,.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end}
+label{display:flex;flex-direction:column;font-size:.9rem;color:var(--muted);gap:4px}
+input,select{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+button.btn{background:var(--green);color:var(--onGreen);border:0;border-radius:4px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:4px;padding:6px 10px;font:inherit;font-size:.9rem;cursor:pointer}
+button.danger{color:var(--red);border-color:var(--red)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.9rem}
+small{color:var(--muted)}
+.act{white-space:nowrap;display:flex;gap:6px}
+.empty{color:var(--muted);text-align:center;padding:22px}
+.late{color:var(--red);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.tile{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--green);border-radius:4px;padding:12px 14px}
+.tile.warn{border-left-color:var(--red)}
+.tile b{display:block;font:700 1.8rem Georgia,serif}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:4px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.show{opacity:1}#toast.bad{background:var(--red);color:#fff}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="spines" id="spines" aria-hidden="true"></div>
+  <h1>Library Management System</h1>
+  <nav id="tabs">
+    <button data-tab="books" class="on">Books</button>
+    <button data-tab="members">Members</button>
+    <button data-tab="issue">Issue &amp; return</button>
+    <button data-tab="reports">Reports</button>
+  </nav>
+</header>
+<main>
+
+<section id="books" class="on">
+  <h2>Add or edit a book</h2>
+  <div class="panel"><form id="bookForm">
+    <input type="hidden" id="bId">
+    <label>Title<input id="bTitle" required></label>
+    <label>Author<input id="bAuthor" required></label>
+    <label>ISBN<input id="bIsbn" required></label>
+    <label>Category<input id="bCat"></label>
+    <label>Total copies<input id="bCopies" type="number" min="1" value="1" required></label>
+    <div class="act"><button class="btn" type="submit" id="bSave">Add book</button><button class="ghost" type="button" id="bCancel" hidden>Cancel</button></div>
+  </form></div>
+  <h2>Search books</h2>
+  <div class="panel row"><label>Search by title, author, ISBN or category<input id="q" placeholder="e.g. Orwell"></label></div>
+  <div class="tablewrap"><table><thead><tr><th>Book</th><th>ISBN</th><th>Category</th><th>Available</th><th></th></tr></thead><tbody id="bookRows"></tbody></table></div>
+</section>
+
+<section id="members">
+  <h2>Add or edit a member</h2>
+  <div class="panel"><form id="memberForm">
+    <input type="hidden" id="mId">
+    <label>Name<input id="mName" required></label>
+    <label>Email<input id="mEmail" type="email" required></label>
+    <label>Phone<input id="mPhone"></label>
+    <div class="act"><button class="btn" type="submit" id="mSave">Add member</button><button class="ghost" type="button" id="mCancel" hidden>Cancel</button></div>
+  </form></div>
+  <div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody id="memberRows"></tbody></table></div>
+</section>
+
+<section id="issue">
+  <h2>Issue a book</h2>
+  <div class="panel"><form id="issueForm">
+    <label>Book<select id="iBook" required></select></label>
+    <label>Member<select id="iMember" required></select></label>
+    <div><button class="btn" type="submit">Issue book</button></div>
+  </form></div>
+  <h2>Books currently issued</h2>
+  <div class="tablewrap"><table><thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Due</th><th></th></tr></thead><tbody id="activeRows"></tbody></table></div>
+</section>
+
+<section id="reports">
+  <div class="tiles" id="tiles"></div>
+  <h2>Overdue books</h2>
+  <div class="tablewrap" style="margin-bottom:24px"><table><thead><tr><th>Book</th><th>Member</th><th>Due</th></tr></thead><tbody id="overdueRows"></tbody></table></div>
+  <h2>Full transaction history</h2>
+  <div class="tablewrap"><table><thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Returned</th><th>Fine</th><th>Status</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+</section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Decorative book spines in the header
+$('#spines').innerHTML = [30,22,36,26,34,20,32,28,38,24,30,35].map((h,i) =>
+  `<i style="height:${h}px;background:${['#2f6f5e','#14213d','#e0a526','#b3261e'][i%4]}"></i>`).join('');
+
+async function api(url, opt = {}) {
+  const r = await fetch('/api' + url, { headers: {'Content-Type':'application/json'}, ...opt });
+  const data = r.status === 204 ? null : await r.json().catch(() => null);
+  if (!r.ok) throw new Error(data?.error || 'Something went wrong. Try again.');
+  return data;
+}
+function toast(msg, bad) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (bad ? ' bad' : '');
+  clearTimeout(toast.id); toast.id = setTimeout(() => t.className = '', 3500);
+}
+async function run(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); } catch (e) { toast(e.message, true); }
+}
+const row = (cells, cols) => cells.length ? cells.join('') : `<tr><td colspan="${cols}" class="empty">Nothing here yet.</td></tr>`;
+
+// ---- Tabs ----
+$('#tabs').onclick = e => {
+  const tab = e.target.dataset.tab; if (!tab) return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b === e.target));
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', s.id === tab));
+  ({books: loadBooks, members: loadMembers, issue: loadIssue, reports: loadReports})[tab]();
+};
+
+// ---- Books ----
+let books = [];
+async function loadBooks() {
+  const q = $('#q').value.trim();
+  books = await api('/books' + (q ? '?q=' + encodeURIComponent(q) : ''));
+  $('#bookRows').innerHTML = books.length ? books.map(b => `<tr>
+    <td>${esc(b.title)}<br><small>${esc(b.author)}</small></td><td>${esc(b.isbn)}</td><td>${esc(b.category)}</td>
+    <td>${b.availableCopies} of ${b.totalCopies}</td>
+    <td class="act"><button class="ghost" onclick="editBook(${b.id})">Edit</button><button class="ghost danger" onclick="deleteBook(${b.id})">Delete</button></td></tr>`).join('')
+    : `<tr><td colspan="5" class="empty">${q ? 'No books match your search.' : 'No books yet. Add your first book above.'}</td></tr>`;
+}
+$('#q').oninput = () => run(loadBooks);
+function resetBookForm() { $('#bookForm').reset(); $('#bId').value = ''; $('#bSave').textContent = 'Add book'; $('#bCancel').hidden = true; }
+$('#bCancel').onclick = resetBookForm;
+window.editBook = id => {
+  const b = books.find(x => x.id === id);
+  $('#bId').value = b.id; $('#bTitle').value = b.title; $('#bAuthor').value = b.author;
+  $('#bIsbn').value = b.isbn; $('#bCat').value = b.category || ''; $('#bCopies').value = b.totalCopies;
+  $('#bSave').textContent = 'Save changes'; $('#bCancel').hidden = false; $('#bTitle').focus();
+};
+window.deleteBook = id => { if (confirm('Delete this book?')) run(async () => { await api('/books/' + id, {method:'DELETE'}); await loadBooks(); }, 'Book deleted'); };
+$('#bookForm').onsubmit = e => {
+  e.preventDefault();
+  const id = $('#bId').value;
+  const body = JSON.stringify({ title: $('#bTitle').value, author: $('#bAuthor').value, isbn: $('#bIsbn').value,
+                                category: $('#bCat').value, totalCopies: +$('#bCopies').value });
+  run(async () => {
+    await api(id ? '/books/' + id : '/books', { method: id ? 'PUT' : 'POST', body });
+    resetBookForm(); await loadBooks();
+  }, id ? 'Book saved' : 'Book added');
+};
+
+// ---- Members ----
+let members = [];
+async function loadMembers() {
+  members = await api('/members');
+  $('#memberRows').innerHTML = row(members.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.email)}</td><td>${esc(m.phone)}</td>
+    <td class="act"><button class="ghost" onclick="editMember(${m.id})">Edit</button><button class="ghost danger" onclick="deleteMember(${m.id})">Delete</button></td></tr>`), 4);
+}
+function resetMemberForm() { $('#memberForm').reset(); $('#mId').value = ''; $('#mSave').textContent = 'Add member'; $('#mCancel').hidden = true; }
+$('#mCancel').onclick = resetMemberForm;
+window.editMember = id => {
+  const m = members.find(x => x.id === id);
+  $('#mId').value = m.id; $('#mName').value = m.name; $('#mEmail').value = m.email; $('#mPhone').value = m.phone || '';
+  $('#mSave').textContent = 'Save changes'; $('#mCancel').hidden = false; $('#mName').focus();
+};
+window.deleteMember = id => { if (confirm('Delete this member?')) run(async () => { await api('/members/' + id, {method:'DELETE'}); await loadMembers(); }, 'Member deleted'); };
+$('#memberForm').onsubmit = e => {
+  e.preventDefault();
+  const id = $('#mId').value;
+  const body = JSON.stringify({ name: $('#mName').value, email: $('#mEmail').value, phone: $('#mPhone').value });
+  run(async () => {
+    await api(id ? '/members/' + id : '/members', { method: id ? 'PUT' : 'POST', body });
+    resetMemberForm(); await loadMembers();
+  }, id ? 'Member saved' : 'Member added');
+};
+
+// ---- Issue & return ----
+async function loadIssue() {
+  const [allBooks, allMembers, active] = await Promise.all([api('/books'), api('/members'), api('/transactions?status=ISSUED')]);
+  $('#iBook').innerHTML = allBooks.filter(b => b.availableCopies > 0).map(b => `<option value="${b.id}">${esc(b.title)} (${b.availableCopies} left)</option>`).join('');
+  $('#iMember').innerHTML = allMembers.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  const today = new Date().toISOString().slice(0, 10);
+  $('#activeRows').innerHTML = row(active.map(t => `<tr><td>${esc(t.book.title)}</td><td>${esc(t.member.name)}</td><td>${t.issueDate}</td>
+    <td class="${t.dueDate < today ? 'late' : ''}">${t.dueDate}${t.dueDate < today ? ' (overdue)' : ''}</td>
+    <td><button class="ghost" onclick="returnBook(${t.id})">Return</button></td></tr>`), 5);
+}
+$('#issueForm').onsubmit = e => {
+  e.preventDefault();
+  run(async () => {
+    await api('/transactions/issue', { method: 'POST', body: JSON.stringify({ bookId: +$('#iBook').value, memberId: +$('#iMember').value }) });
+    await loadIssue();
+  }, 'Book issued');
+};
+window.returnBook = id => run(async () => {
+  const t = await api(`/transactions/${id}/return`, { method: 'POST' });
+  await loadIssue();
+  toast(t.fine > 0 ? `Book returned. Late fine: ${t.fine}` : 'Book returned');
+});
+
+// ---- Reports ----
+async function loadReports() {
+  const [s, overdue, history] = await Promise.all([api('/reports/summary'), api('/reports/overdue'), api('/transactions')]);
+  const tiles = [['Book titles', s.bookTitles], ['Total copies', s.totalCopies], ['Copies on shelf', s.availableCopies],
+                 ['Members', s.members], ['Currently issued', s.currentlyIssued], ['Overdue', s.overdue, true]];
+  $('#tiles').innerHTML = tiles.map(([l, v, w]) => `<div class="tile ${w && v > 0 ? 'warn' : ''}"><b>${v}</b>${l}</div>`).join('');
+  $('#overdueRows').innerHTML = row(overdue.map(t => `<tr><td>${esc(t.book.title)}</td><td>${esc(t.member.name)}</td><td class="late">${t.dueDate}</td></tr>`), 3);
+  $('#historyRows').innerHTML = row(history.map(t => `<tr><td>${esc(t.book.title)}</td><td>${esc(t.member.name)}</td><td>${t.issueDate}</td>
+    <td>${t.returnDate || '-'}</td><td>${t.fine || 0}</td><td>${t.status === 'ISSUED' ? 'Issued' : 'Returned'}</td></tr>`), 6);
+}
+
+run(loadBooks);
+</script>
+</body>
+</html>
